@@ -440,14 +440,24 @@ export async function fetchDashboardCounts(config: SheetConfig): Promise<{ count
   return { counts: {}, avgWeight: '0 Kg' };
 }
 
-// Initialize empty Google Sheets database with preset default datasets
+// Initialize empty Google Sheets database with local storage data (previous user data) or presets
 export async function initializeSpreadsheetData(config: SheetConfig): Promise<boolean> {
   if (config.mode !== 'crud') return false;
   if (!config.gasUrl) throw new Error('URL Apps Script Web App tidak boleh kosong!');
   try {
     const cleanDatasets: Record<string, any[]> = {};
-    Object.keys(INITIAL_DATASETS).forEach(sheetName => {
-      cleanDatasets[sheetName] = INITIAL_DATASETS[sheetName].rows;
+    
+    SHEET_NAMES.forEach(sheetName => {
+      const localData = getLocalData(sheetName);
+      if (localData && localData.rows) {
+        cleanDatasets[sheetName] = localData.rows.map(row => {
+          const cleanRow = { ...row };
+          delete cleanRow['__rowNum__'];
+          return cleanRow;
+        });
+      } else {
+        cleanDatasets[sheetName] = [];
+      }
     });
 
     const response = await fetch(config.gasUrl, {

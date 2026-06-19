@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { SHEET_NAMES } from '../utils/sheetSync';
+import { SHEET_NAMES, initializeSpreadsheetData } from '../utils/sheetSync';
 import type { SheetConfig } from '../utils/sheetSync';
-import { Save, AlertCircle, CheckCircle2, ShieldCheck, Database } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle2, ShieldCheck, Database, UploadCloud } from 'lucide-react';
 
 interface SyncSettingsProps {
   config: SheetConfig;
@@ -20,6 +20,10 @@ export const SyncSettings: React.FC<SyncSettingsProps> = ({
   const [csvUrl, setCsvUrl] = useState(config.csvUrl);
   const [gasUrl, setGasUrl] = useState(config.gasUrl);
   const [activeSheet, setActiveSheet] = useState(config.activeSheet);
+  const [migrationStatus, setMigrationStatus] = useState<{ status: 'idle' | 'running' | 'success' | 'error'; message: string }>({
+    status: 'idle',
+    message: ''
+  });
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +33,20 @@ export const SyncSettings: React.FC<SyncSettingsProps> = ({
       gasUrl,
       activeSheet
     });
+  };
+
+  const handleMigrateLocalData = async () => {
+    setMigrationStatus({ status: 'running', message: 'Sedang memindahkan data dari browser lokal ke spreadsheet...' });
+    try {
+      const success = await initializeSpreadsheetData(config);
+      if (success) {
+        setMigrationStatus({ status: 'success', message: 'Seluruh data lokal Anda berhasil dipindahkan ke Google Spreadsheet!' });
+      } else {
+        setMigrationStatus({ status: 'error', message: 'Gagal memigrasikan data. Pastikan versi Google Apps Script di Spreadsheet Anda adalah versi terbaru yang mendukung inisialisasi.' });
+      }
+    } catch (err: any) {
+      setMigrationStatus({ status: 'error', message: err.message || 'Terjadi kesalahan saat migrasi.' });
+    }
   };
 
   return (
@@ -242,6 +260,79 @@ export const SyncSettings: React.FC<SyncSettingsProps> = ({
             </div>
           )}
         </div>
+
+        {/* Migration Panel */}
+        {mode === 'crud' && connectionStatus.status === 'success' && (
+          <div className="card" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-xl)' }}>
+            <h2 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <UploadCloud className="c-primary" size={18} />
+              Migrasi Data Lokal ke Cloud
+            </h2>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 16, marginTop: 4 }}>
+              Jika Anda sebelumnya telah menginput data di komputer ini saat menggunakan <strong>Mode Demo / Offline</strong>, 
+              Anda bisa memindahkan semua data tersebut langsung ke Google Spreadsheet Anda sekaligus.
+            </p>
+            
+            {migrationStatus.status === 'idle' && (
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={handleMigrateLocalData}
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                <UploadCloud size={16} />
+                <span>Upload & Sinkron Data Lokal</span>
+              </button>
+            )}
+
+            {migrationStatus.status === 'running' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: 'var(--bg-card-hover)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
+                <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }}></div>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>{migrationStatus.message}</span>
+              </div>
+            )}
+
+            {migrationStatus.status === 'success' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 12, background: 'var(--success-glow)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <CheckCircle2 className="c-success" size={20} />
+                  <strong className="c-success" style={{ fontSize: '0.9rem' }}>Migrasi Berhasil</strong>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  {migrationStatus.message}
+                </p>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary btn-sm" 
+                  onClick={() => setMigrationStatus({ status: 'idle', message: '' })}
+                  style={{ alignSelf: 'flex-start', marginTop: 8 }}
+                >
+                  Migrasi Lagi
+                </button>
+              </div>
+            )}
+
+            {migrationStatus.status === 'error' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 12, background: 'var(--danger-glow)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <AlertCircle className="c-danger" size={20} />
+                  <strong className="c-danger" style={{ fontSize: '0.9rem' }}>Migrasi Gagal</strong>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  {migrationStatus.message}
+                </p>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary btn-sm" 
+                  onClick={() => setMigrationStatus({ status: 'idle', message: '' })}
+                  style={{ alignSelf: 'flex-start', marginTop: 8 }}
+                >
+                  Coba Lagi
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </div>
