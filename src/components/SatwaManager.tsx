@@ -7,6 +7,161 @@ import {
   Upload
 } from 'lucide-react';
 
+const formatDateIndonesian = (dateStr: string): string => {
+  if (!dateStr || dateStr === '-') return '-';
+  const cleanStr = dateStr.trim();
+  
+  // 1. Check split-by-space: e.g. "21 April 2014" or "13 June 2014"
+  const parts = cleanStr.split(/\s+/);
+  if (parts.length === 3) {
+    const day = parseInt(parts[0], 10);
+    const monthName = parts[1].toLowerCase();
+    const year = parseInt(parts[2], 10);
+    
+    if (!isNaN(day) && !isNaN(year) && year > 1900 && year < 2100) {
+      const indonesianMonthsMap: Record<string, string> = {
+        'jan': 'Januari', 'januari': 'Januari', 'january': 'Januari',
+        'feb': 'Februari', 'februari': 'Februari', 'february': 'Februari',
+        'mar': 'Maret', 'maret': 'Maret', 'march': 'Maret',
+        'apr': 'April', 'april': 'April',
+        'mei': 'Mei', 'may': 'Mei',
+        'jun': 'Juni', 'juni': 'Juni', 'june': 'Juni',
+        'jul': 'Juli', 'juli': 'Juli', 'july': 'Juli',
+        'agu': 'Agustus', 'agustus': 'Agustus', 'august': 'Agustus', 'agt': 'Agustus',
+        'sep': 'September', 'september': 'September',
+        'okt': 'Oktober', 'oktober': 'Oktober', 'october': 'Oktober',
+        'nov': 'November', 'november': 'November',
+        'des': 'Desember', 'desember': 'Desember', 'december': 'Desember'
+      };
+      
+      const matchedMonth = indonesianMonthsMap[monthName];
+      if (matchedMonth) {
+        const dayStr = day < 10 ? `0${day}` : `${day}`;
+        return `${dayStr} ${matchedMonth} ${year}`;
+      }
+    }
+  }
+  
+  // 2. Check formats like "21/04/2014" or "2014-04-21"
+  const dmyRegex = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/;
+  const ymdRegex = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/;
+  
+  let day: number | null = null;
+  let monthIndex: number | null = null;
+  let year: number | null = null;
+  
+  if (dmyRegex.test(cleanStr)) {
+    const match = cleanStr.match(dmyRegex)!;
+    day = parseInt(match[1], 10);
+    monthIndex = parseInt(match[2], 10) - 1;
+    year = parseInt(match[3], 10);
+  } else if (ymdRegex.test(cleanStr)) {
+    const match = cleanStr.match(ymdRegex)!;
+    day = parseInt(match[3], 10);
+    monthIndex = parseInt(match[2], 10) - 1;
+    year = parseInt(match[1], 10);
+  }
+  
+  if (day !== null && monthIndex !== null && year !== null && monthIndex >= 0 && monthIndex < 12) {
+    const indonesianMonths = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const dayStr = day < 10 ? `0${day}` : `${day}`;
+    return `${dayStr} ${indonesianMonths[monthIndex]} ${year}`;
+  }
+  
+  // 3. Fallback to normal JS Date parsing
+  const parsedDate = new Date(cleanStr);
+  if (!isNaN(parsedDate.getTime())) {
+    const dayVal = parsedDate.getDate();
+    const monthVal = parsedDate.getMonth();
+    const yearVal = parsedDate.getFullYear();
+    
+    const indonesianMonths = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    
+    const dayStr = dayVal < 10 ? `0${dayVal}` : `${dayVal}`;
+    return `${dayStr} ${indonesianMonths[monthVal]} ${yearVal}`;
+  }
+  
+  return cleanStr;
+};
+
+const formatDateForInput = (dateStr: string): string => {
+  if (!dateStr || dateStr === '-') return '';
+  const cleanStr = dateStr.trim();
+  
+  // 1. Try split-by-space
+  const parts = cleanStr.split(/\s+/);
+  if (parts.length === 3) {
+    const day = parseInt(parts[0], 10);
+    const monthName = parts[1].toLowerCase();
+    const year = parseInt(parts[2], 10);
+    
+    if (!isNaN(day) && !isNaN(year) && year > 1900 && year < 2100) {
+      const indonesianMonthsMap: Record<string, number> = {
+        'jan': 0, 'januari': 0, 'january': 0,
+        'feb': 1, 'februari': 1, 'february': 1,
+        'mar': 2, 'maret': 2, 'march': 2,
+        'apr': 3, 'april': 3,
+        'mei': 4, 'may': 4,
+        'jun': 5, 'juni': 5, 'june': 5,
+        'jul': 6, 'juli': 6, 'july': 6,
+        'agu': 7, 'agustus': 7, 'august': 7, 'agt': 7,
+        'sep': 8, 'september': 8,
+        'okt': 9, 'oktober': 9, 'october': 9,
+        'nov': 10, 'november': 10,
+        'des': 11, 'desember': 11, 'december': 11
+      };
+      
+      const monthIndex = indonesianMonthsMap[monthName];
+      if (monthIndex !== undefined) {
+        const dayStr = day < 10 ? `0${day}` : `${day}`;
+        const monthStr = (monthIndex + 1) < 10 ? `0${monthIndex + 1}` : `${monthIndex + 1}`;
+        return `${year}-${monthStr}-${dayStr}`;
+      }
+    }
+  }
+  
+  // 2. Check formats like "21/04/2014" or "2014-04-21"
+  const dmyRegex = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/;
+  const ymdRegex = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/;
+  
+  if (dmyRegex.test(cleanStr)) {
+    const match = cleanStr.match(dmyRegex)!;
+    const day = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10);
+    const year = parseInt(match[3], 10);
+    const dayStr = day < 10 ? `0${day}` : `${day}`;
+    const monthStr = month < 10 ? `0${month}` : `${month}`;
+    return `${year}-${monthStr}-${dayStr}`;
+  } else if (ymdRegex.test(cleanStr)) {
+    const match = cleanStr.match(ymdRegex)!;
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10);
+    const day = parseInt(match[3], 10);
+    const dayStr = day < 10 ? `0${day}` : `${day}`;
+    const monthStr = month < 10 ? `0${month}` : `${month}`;
+    return `${year}-${monthStr}-${dayStr}`;
+  }
+  
+  // 3. Fallback to parsing as Date
+  const parsedDate = new Date(cleanStr);
+  if (!isNaN(parsedDate.getTime())) {
+    const year = parsedDate.getFullYear();
+    const month = parsedDate.getMonth() + 1;
+    const day = parsedDate.getDate();
+    const dayStr = day < 10 ? `0${day}` : `${day}`;
+    const monthStr = month < 10 ? `0${month}` : `${month}`;
+    return `${year}-${monthStr}-${dayStr}`;
+  }
+  
+  return '';
+};
+
 const compressImage = (file: File, maxWidth: number = 400, maxHeight: number = 400, quality: number = 0.7): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -222,8 +377,8 @@ export const SatwaManager: React.FC<SatwaManagerProps> = ({ data, config, onRefr
             const image = String(row['Gambar']).trim();
             const species = String(row['Species']).trim();
             const gender = String(row['Jenis Kelamin']).trim();
-            const tsi = String(row['Kedatangan TSI']).trim();
-            const sbj = String(row['Kedatangan SBJ']).trim();
+            const tsi = formatDateIndonesian(String(row['Kedatangan TSI']).trim());
+            const sbj = formatDateIndonesian(String(row['Kedatangan SBJ']).trim());
 
             const isExpanded = !!expandedSatwa[name];
             const hasImage = image !== '' && image !== '-' && image !== 'null';
@@ -410,7 +565,7 @@ export const SatwaManager: React.FC<SatwaManagerProps> = ({ data, config, onRefr
                         <input
                           type="date"
                           className="input"
-                          value={formData[header] || ''}
+                          value={formatDateForInput(formData[header] || '')}
                           onChange={e => setFormData({ ...formData, [header]: e.target.value })}
                         />
                       </div>
