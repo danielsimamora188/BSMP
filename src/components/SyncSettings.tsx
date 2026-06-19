@@ -46,6 +46,28 @@ export const SyncSettings: React.FC<SyncSettingsProps> = ({
           </h2>
 
           <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {!!import.meta.env.VITE_GAS_URL && (
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 12, 
+                padding: '12px 16px', 
+                background: 'rgba(59, 130, 246, 0.08)', 
+                border: '1px solid rgba(59, 130, 246, 0.2)', 
+                borderRadius: 'var(--radius-md)',
+                marginBottom: 4
+              }}>
+                <ShieldCheck className="c-primary" size={20} style={{ flexShrink: 0 }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Koneksi Cloud Terkonfigurasi Global
+                  </span>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                    Aplikasi terhubung ke basis data cloud terpusat via Vercel/Environment Variables.
+                  </span>
+                </div>
+              </div>
+            )}
             {/* Mode selection cards */}
             <div>
               <label className="stat-label" style={{ marginBottom: 8, display: 'block' }}>Pilih Mode Sinkronisasi</label>
@@ -151,7 +173,14 @@ export const SyncSettings: React.FC<SyncSettingsProps> = ({
 
             {mode === 'crud' && (
               <div>
-                <label className="stat-label" style={{ marginBottom: 6, display: 'block' }}>URL Web App Google Apps Script</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label className="stat-label" style={{ margin: 0 }}>URL Web App Google Apps Script</label>
+                  {!!import.meta.env.VITE_GAS_URL && (
+                    <span className="badge badge-info" style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '4px' }}>
+                      Bawaan Sistem (.env)
+                    </span>
+                  )}
+                </div>
                 <input
                   type="url"
                   className="input"

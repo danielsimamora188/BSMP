@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchSheetData, getConfig } from './utils/sheetSync';
+import { fetchSheetData, getConfig, fetchDashboardCounts } from './utils/sheetSync';
 import type { SheetConfig, SheetData } from './utils/sheetSync';
 import { BottomNav } from './components/BottomNav';
 import { Dashboard } from './components/Dashboard';
@@ -13,6 +13,7 @@ import { Database, RefreshCw, AlertTriangle, Sun, Moon, Download, LogOut } from 
 function App() {
   const [config, setConfig] = useState<SheetConfig>(getConfig());
   const [sheetData, setSheetData] = useState<SheetData>({ headers: [], rows: [] });
+  const [dashboardCounts, setDashboardCounts] = useState<Record<string, number>>({});
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [connectionStatus, setConnectionStatus] = useState<{ status: 'success' | 'error' | 'idle'; message: string }>({
@@ -61,6 +62,10 @@ function App() {
 
     setIsLoading(true);
     try {
+      if (currentTab === 'dashboard') {
+        const counts = await fetchDashboardCounts(activeConfig);
+        setDashboardCounts(counts);
+      }
       const result = await fetchSheetData(activeConfig);
       setSheetData(result);
       setConnectionStatus({
@@ -217,7 +222,7 @@ function App() {
               currentUser.role === 'admin' ? (
                 <AdminDashboard config={config} initialSubTab="analytics" />
               ) : (
-                <Dashboard data={sheetData} preset={config.activeSheet} theme={theme} />
+                <Dashboard data={sheetData} preset={config.activeSheet} theme={theme} counts={dashboardCounts} />
               )
             )}
 

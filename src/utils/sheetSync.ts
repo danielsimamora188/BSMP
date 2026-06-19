@@ -213,19 +213,28 @@ export function saveConfig(config: SheetConfig) {
 }
 
 export function getConfig(): SheetConfig {
+  const defaultGasUrl = import.meta.env.VITE_GAS_URL || '';
+  const defaultMode = (import.meta.env.VITE_DEFAULT_MODE as 'demo' | 'csv' | 'crud') || (defaultGasUrl ? 'crud' : 'demo');
+
   const saved = localStorage.getItem(CONFIG_KEY);
   if (saved) {
     try {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      return {
+        mode: parsed.mode || defaultMode,
+        csvUrl: parsed.csvUrl || '',
+        gasUrl: parsed.gasUrl || defaultGasUrl,
+        activeSheet: parsed.activeSheet || SHEET_NAMES[0]
+      };
     } catch (e) {
       // ignore
     }
   }
   return {
-    mode: 'demo',
+    mode: defaultMode,
     csvUrl: '',
-    gasUrl: '',
-    activeSheet: SHEET_NAMES[0] // Default: Satwa
+    gasUrl: defaultGasUrl,
+    activeSheet: SHEET_NAMES[0]
   };
 }
 
@@ -348,6 +357,49 @@ export async function fetchSheetData(config: SheetConfig): Promise<SheetData> {
   }
 
   return { headers: [], rows: [] };
+}
+
+// Fetch dashboard count summary for all sheets
+export async function fetchDashboardCounts(config: SheetConfig): Promise<Record<string, number>> {
+  if (config.mode === 'demo') {
+    const counts: Record<string, number> = {};
+    SHEET_NAMES.forEach(name => {
+      counts[name] = getLocalData(name).rows.length;
+    });
+    return counts;
+  }
+
+  if (config.mode === 'csv') {
+    const counts: Record<string, number> = {};
+    SHEET_NAMES.forEach(name => {
+      counts[name] = INITIAL_DATASETS[name]?.rows.length || 0;
+    });
+    return counts;
+  }
+
+  if (config.mode === 'crud') {
+    if (!config.gasUrl) throw new Error('URL Apps Script Web App tidak boleh kosong!');
+    const fetchUrl = `${config.gasUrl}${config.gasUrl.includes('?') ? '&' : '?'}action=dashboard`;
+    try {
+      const response = await fetch(fetchUrl);
+      if (!response.ok) throw new Error('Gagal terhubung ke Apps Script.');
+      const resJson = await response.json();
+      if (resJson.status === 'success' && resJson.counts) {
+        return resJson.counts;
+      } else {
+        throw new Error(resJson.message || 'Respons API bermasalah');
+      }
+    } catch (e: any) {
+      console.warn('Dashboard fetch failed, falling back to local fallback:', e);
+      const counts: Record<string, number> = {};
+      SHEET_NAMES.forEach(name => {
+        counts[name] = getLocalData(name).rows.length;
+      });
+      return counts;
+    }
+  }
+
+  return {};
 }
 
 // Asynchronous audit logging helper
@@ -475,8 +527,39 @@ export const GOOGLE_APPS_SCRIPT_CODE = `// Copy-paste kode ini ke Spreadsheet An
 // Deploy sebagai Web App. Setel "Execute as: Me" dan "Who has access: Anyone".
 
 function doGet(e) {
-  var sheetName = e.parameter.sheetName || "Satwa";
+  var action = e.parameter.action || "read";
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  if (action === "dashboard") {
+    var counts = {};
+    var sheetNames = ["Satwa", "Medicine", "Blooddraw", "Weighing", "Blowhole_Sample", "Stomach_Sample", "Tubing", "Others", "Users", "Logs"];
+    for (var i = 0; i < sheetNames.length; i++) {
+      var name = sheetNames[i];
+      var sheet = ss.getSheetByName(name);
+      if (!sheet) {
+        counts[name] = 0;
+      } else {
+        var dataRange = sheet.getDataRange();
+        var data = dataRange.getValues();
+        var count = 0;
+        for (var r = 1; r < data.length; r++) {
+          var hasRowData = false;
+          for (var c = 0; c < data[r].length; c++) {
+            if (data[r][c] !== "") {
+              hasRowData = true;
+              break;
+            }
+          }
+          if (hasRowData) count++;
+        }
+        counts[name] = count;
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", counts: counts }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  var sheetName = e.parameter.sheetName || "Satwa";
   var sheet = ss.getSheetByName(sheetName);
   
   if (!sheet) {

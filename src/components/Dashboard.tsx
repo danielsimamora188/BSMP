@@ -8,15 +8,19 @@ interface DashboardProps {
   data: SheetData;
   preset: string;
   theme?: string;
+  counts?: Record<string, number>;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ data, theme }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ data, theme, counts }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Core telemetry calculation
   const stats = useMemo(() => {
     // We aggregate data from all local storage datasets for Saka, Sinyorita, Winter, Leon, Manyu, Cengho, Abu
     const getLength = (key: string) => {
+      if (counts && counts[key] !== undefined) {
+        return counts[key];
+      }
       try {
         const val = localStorage.getItem(`sheetsync_dataset_${key}`);
         if (val) {
