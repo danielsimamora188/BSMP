@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fetchSheetData, getConfig, fetchDashboardCounts, initializeSpreadsheetData } from './utils/sheetSync';
 import type { SheetConfig, SheetData } from './utils/sheetSync';
 import { BottomNav } from './components/BottomNav';
@@ -8,7 +8,7 @@ import { DataManager } from './components/DataManager';
 import { Login } from './components/Login';
 import { AdminDashboard } from './components/AdminDashboard';
 import { exportAllToExcel } from './utils/excelExport';
-import { Database, RefreshCw, AlertTriangle, Sun, Moon, Download, LogOut } from 'lucide-react';
+import { Database, RefreshCw, AlertTriangle, Sun, Moon, Download, LogOut, CheckCircle, XCircle } from 'lucide-react';
 
 function App() {
   const [config, setConfig] = useState<SheetConfig>(getConfig());
@@ -21,6 +21,8 @@ function App() {
     status: 'idle',
     message: ''
   });
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [exportToast, setExportToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // User state for login system
   const [currentUser, setCurrentUser] = useState<{ username: string; name: string; role: 'admin' | 'user' } | null>(() => {
@@ -49,8 +51,23 @@ function App() {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  const handleExport = () => {
-    exportAllToExcel();
+  const showExportToast = useCallback((type: 'success' | 'error', message: string) => {
+    setExportToast({ type, message });
+    setTimeout(() => setExportToast(null), 3500);
+  }, []);
+
+  const handleExport = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      await exportAllToExcel(config);
+      showExportToast('success', 'File Excel berhasil diunduh!');
+    } catch (e: any) {
+      console.error('Export failed:', e);
+      showExportToast('error', e.message || 'Ekspor Excel gagal.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Fetch sheet data from chosen source
@@ -186,9 +203,11 @@ function App() {
             <button 
               className="btn btn-secondary btn-sm btn-icon-only" 
               onClick={handleExport}
-              title="Ekspor Excel"
+              title={isExporting ? 'Mengunduh...' : 'Ekspor Excel'}
+              disabled={isExporting}
+              style={{ opacity: isExporting ? 0.7 : 1 }}
             >
-              <Download size={14} />
+              <Download size={14} className={isExporting ? 'spin-anim' : ''} style={{ animation: isExporting ? 'spin 1s linear infinite' : 'none' }} />
             </button>
           )}
           <button 
@@ -229,7 +248,37 @@ function App() {
         onExport={handleExport}
         onLogout={handleLogout}
         userRole={currentUser.role}
+        isExporting={isExporting}
       />
+
+      {/* Export Toast Notification */}
+      {exportToast && (
+        <div style={{
+          position: 'fixed',
+          bottom: 80,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '12px 20px',
+          borderRadius: 'var(--radius-lg)',
+          background: exportToast.type === 'success' ? 'var(--success-container, #1a3a2a)' : 'var(--danger-container, #3a1a1a)',
+          border: `1px solid ${exportToast.type === 'success' ? 'var(--success, #4ade80)' : 'var(--danger, #f87171)'}`,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          color: exportToast.type === 'success' ? 'var(--success, #4ade80)' : 'var(--danger, #f87171)',
+          fontSize: '0.85rem',
+          fontWeight: 600,
+          animation: 'fadeIn 0.25s ease',
+          whiteSpace: 'nowrap',
+        }}>
+          {exportToast.type === 'success'
+            ? <CheckCircle size={16} />
+            : <XCircle size={16} />}
+          {exportToast.message}
+        </div>
+      )}
 
       {/* Primary Page Content */}
       <main className="page-content">

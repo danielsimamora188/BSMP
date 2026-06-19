@@ -14,6 +14,7 @@ interface BottomNavProps {
   onExport: () => void;
   onLogout?: () => void;
   userRole?: 'admin' | 'user';
+  isExporting?: boolean;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({ 
@@ -24,7 +25,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   toggleTheme,
   onExport,
   onLogout,
-  userRole
+  userRole,
+  isExporting = false
 }) => {
   const allTabs = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -115,10 +117,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             <button 
               className="sidebar-btn" 
               onClick={onExport} 
-              title="Ekspor Seluruh Data ke Excel"
+              title={isExporting ? 'Mengunduh...' : 'Ekspor Seluruh Data ke Excel'}
+              disabled={isExporting}
+              style={{ opacity: isExporting ? 0.7 : 1 }}
             >
-              <Download size={16} />
-              <span>Export Excel</span>
+              <Download size={16} style={{ animation: isExporting ? 'spin 1s linear infinite' : 'none' }} />
+              <span>{isExporting ? 'Mengunduh...' : 'Export Excel'}</span>
             </button>
           )}
 

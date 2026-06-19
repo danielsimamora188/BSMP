@@ -1,17 +1,23 @@
-import { getLocalData } from './sheetSync';
+import { getLocalData, fetchSheetData } from './sheetSync';
+import type { SheetConfig } from './sheetSync';
 
-export function exportAllToExcel() {
-  const sheetNames = [
-    'Satwa',
-    'Medicine',
-    'Blooddraw',
-    'Weighing',
-    'Blowhole_Sample',
-    'Stomach_Sample',
-    'Tubing',
-    'Others'
-  ];
+const DATA_SHEET_NAMES = [
+  'Satwa',
+  'Medicine',
+  'Blooddraw',
+  'Weighing',
+  'Blowhole_Sample',
+  'Stomach_Sample',
+  'Tubing',
+  'Others'
+];
 
+/**
+ * Fetch all sheet data and produce an Excel (SpreadsheetML) download.
+ * Works in all three modes: demo (localStorage), csv (falls back to localStorage),
+ * and crud (fetches live data from the GAS server).
+ */
+export async function exportAllToExcel(config?: SheetConfig): Promise<void> {
   let xml = `<?xml version="1.0"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
@@ -25,18 +31,29 @@ export function exportAllToExcel() {
   </DocumentProperties>
 `;
 
-  sheetNames.forEach(sheetName => {
-    // Retrieve latest local storage or preset data
-    const data = getLocalData(sheetName);
+  for (const sheetName of DATA_SHEET_NAMES) {
+    let data: { headers: string[]; rows: Record<string, any>[] };
+
+    if (config && (config.mode === 'crud' || config.mode === 'csv')) {
+      try {
+        data = await fetchSheetData({ ...config, activeSheet: sheetName });
+      } catch (e) {
+        // Fall back to local cache if server request fails
+        console.warn(`Failed to fetch ${sheetName} from server, using local cache.`, e);
+        data = getLocalData(sheetName);
+      }
+    } else {
+      data = getLocalData(sheetName);
+    }
+
     const { headers, rows } = data;
 
     // Excel worksheet names must not exceed 31 characters
-    // 'Blowhole_Sample' is 15 chars, which is perfectly safe.
-    xml += `  <Worksheet ss:Name="${sheetName}">
+    xml += `  <Worksheet ss:Name="${escapeXml(sheetName)}">
     <Table>
 `;
 
-    // Headers Row
+    // Header row
     if (headers.length > 0) {
       xml += `      <Row>\n`;
       headers.forEach(h => {
@@ -46,13 +63,13 @@ export function exportAllToExcel() {
       xml += `      </Row>\n`;
     }
 
-    // Data Rows
+    // Data rows
     rows.forEach(row => {
       xml += `      <Row>\n`;
       headers.forEach(h => {
         const val = row[h] !== undefined ? row[h] : '';
         const cleanVal = escapeXml(String(val));
-        
+
         // Detect numeric values for proper Excel cell types
         const isNum = !isNaN(Number(val)) && val !== '' && val !== '-';
         const type = isNum ? 'Number' : 'String';
@@ -63,7 +80,7 @@ export function exportAllToExcel() {
 
     xml += `    </Table>
   </Worksheet>\n`;
-  });
+  }
 
   xml += `</Workbook>`;
 
