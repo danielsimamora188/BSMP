@@ -3,8 +3,52 @@ import { executeWriteAction } from '../utils/sheetSync';
 import type { SheetData, SheetConfig } from '../utils/sheetSync';
 import { 
   Search, Plus, Edit2, Trash2, Info, X, ShieldAlert, 
-  Ruler, User, Calendar, Tag, ChevronDown, ChevronUp 
+  Ruler, User, Calendar, Tag, ChevronDown, ChevronUp,
+  Upload
 } from 'lucide-react';
+
+const compressImage = (file: File, maxWidth: number = 400, maxHeight: number = 400, quality: number = 0.7): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Gagal memproses canvas gambar'));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
 
 interface SatwaManagerProps {
   data: SheetData;
@@ -26,8 +70,12 @@ export const SatwaManager: React.FC<SatwaManagerProps> = ({ data, config, onRefr
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Drag and drop state for image uploader
+  const [isDragging, setIsDragging] = useState(false);
+  
   // Delete confirmation
   const [deleteConfirmRow, setDeleteConfirmRow] = useState<Record<string, any> | null>(null);
+
 
   const primaryIdKey = headers[0] || 'Nama Satwa';
 
@@ -383,26 +431,93 @@ export const SatwaManager: React.FC<SatwaManagerProps> = ({ data, config, onRefr
                       </div>
                     );
 
-                    if (isImage) return (
-                      <div key={header}>
-                        <label className="stat-label" style={{ marginBottom: 6, display: 'block' }}>{header} <span style={{ color: 'var(--text-muted)' }}>(URL Google Drive)</span></label>
-                        <input
-                          type="url"
-                          className="input"
-                          placeholder="https://lh3.googleusercontent.com/d/..."
-                          value={formData[header] || ''}
-                          onChange={e => setFormData({ ...formData, [header]: e.target.value })}
-                        />
-                        {formData[header] && formData[header] !== '-' && (
-                          <img
-                            src={formData[header]}
-                            alt="preview"
-                            style={{ marginTop: 8, width: '100%', height: 100, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--border-color)' }}
-                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                          />
-                        )}
-                      </div>
-                    );
+                    if (isImage) {
+                      const imageVal = formData[header] || '';
+                      const hasUploadedImage = imageVal !== '' && imageVal !== '-' && imageVal !== 'null';
+
+                      const handleFileChange = async (file: File) => {
+                        if (!file.type.startsWith('image/')) {
+                          alert('File yang diunggah harus berupa gambar!');
+                          return;
+                        }
+                        setIsSubmitting(true);
+                        try {
+                          const base64Data = await compressImage(file);
+                          setFormData(prev => ({ ...prev, [header]: base64Data }));
+                        } catch (err) {
+                          alert('Gagal memproses gambar. Coba file gambar lain.');
+                          console.error(err);
+                        } finally {
+                          setIsSubmitting(false);
+                        }
+                      };
+
+                      return (
+                        <div key={header} className="image-upload-container">
+                          <label className="stat-label" style={{ marginBottom: 6, display: 'block' }}>
+                            {header}
+                          </label>
+
+                          {hasUploadedImage ? (
+                            <div className="image-upload-preview-wrapper animate-fade-in">
+                              <img
+                                src={imageVal}
+                                alt="Pratinjau Satwa"
+                                className="image-upload-preview"
+                              />
+                              <div className="image-upload-preview-overlay">
+                                <button
+                                  type="button"
+                                  className="btn btn-danger btn-sm"
+                                  onClick={() => setFormData({ ...formData, [header]: '-' })}
+                                >
+                                  Hapus Gambar
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              className={`image-upload-dropzone ${isDragging ? 'dragging' : ''}`}
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                setIsDragging(true);
+                              }}
+                              onDragLeave={() => setIsDragging(false)}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                setIsDragging(false);
+                                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                  handleFileChange(e.dataTransfer.files[0]);
+                                }
+                              }}
+                              onClick={() => {
+                                const fileInput = document.getElementById('satwa-file-input');
+                                if (fileInput) fileInput.click();
+                              }}
+                            >
+                              <Upload size={24} />
+                              <span className="image-upload-text">
+                                Tarik & Lepas atau <strong>Klik untuk Upload Gambar</strong>
+                              </span>
+                              <span className="image-upload-hint">
+                                Gambar otomatis diperkecil agar pas dan cepat dimuat
+                              </span>
+                              <input
+                                id="satwa-file-input"
+                                type="file"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    handleFileChange(e.target.files[0]);
+                                  }
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
 
                     return (
                       <div key={header}>

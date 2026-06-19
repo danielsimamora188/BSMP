@@ -20,7 +20,9 @@ export const SHEET_NAMES = [
   'Blowhole_Sample',
   'Stomach_Sample',
   'Tubing',
-  'Others'
+  'Others',
+  'Users',
+  'Logs'
 ];
 
 // User's Real Datasets pre-populated
@@ -172,6 +174,17 @@ export const INITIAL_DATASETS: Record<string, SheetData> = {
       { 'ID_Others': '548825', 'NAMA SATWA': 'SAKA', 'KATEGORI': 'Others', 'DATE': '17 September 2025', 'INFORMATION': 'Penanganan mata Saka oleh Dr. Ditto karena keluar darah' },
       { 'ID_Others': '296495', 'NAMA SATWA': 'SAKA', 'KATEGORI': 'Others', 'DATE': '10 October 2025', 'INFORMATION': 'Pengecekan mata oleh Dokter Internal & External didampingi oleh Dr. Yohana dan Dr. Bongot' }
     ]
+  },
+  'Users': {
+    headers: ['Username', 'Password', 'Nama Lengkap', 'Role'],
+    rows: [
+      { 'Username': 'admin', 'Password': 'admin123', 'Nama Lengkap': 'Administrator Utama', 'Role': 'admin' },
+      { 'Username': 'petugas1', 'Password': 'user123', 'Nama Lengkap': 'Ahmad Fauzi', 'Role': 'user' }
+    ]
+  },
+  'Logs': {
+    headers: ['ID_Log', 'Tanggal & Waktu', 'Pengguna', 'Aktivitas', 'Detail'],
+    rows: []
   }
 };
 
@@ -337,6 +350,52 @@ export async function fetchSheetData(config: SheetConfig): Promise<SheetData> {
   return { headers: [], rows: [] };
 }
 
+// Asynchronous audit logging helper
+async function logAction(config: SheetConfig, action: string, sheetName: string, rowData: Record<string, any>, idValue?: any) {
+  if (sheetName === 'Logs') return; // Prevent loops
+  
+  try {
+    const loggedUserStr = localStorage.getItem('bsmp_current_user');
+    let username = 'System';
+    if (loggedUserStr) {
+      try {
+        const parsed = JSON.parse(loggedUserStr);
+        username = parsed.username || 'System';
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const logId = Math.floor(100000 + Math.random() * 900000).toString();
+    const nowStr = new Date().toLocaleString('id-ID');
+
+    const firstKey = Object.keys(rowData)[0] || '';
+    const rowIdVal = idValue || rowData[firstKey] || '-';
+
+    let detailMsg = '';
+    if (action === 'create') {
+      detailMsg = `Menambahkan data baru di ${sheetName} (ID: ${rowIdVal})`;
+    } else if (action === 'update') {
+      detailMsg = `Mengubah data di ${sheetName} (ID: ${rowIdVal})`;
+    } else if (action === 'delete') {
+      detailMsg = `Menghapus data di ${sheetName} (ID: ${rowIdVal})`;
+    }
+
+    const logRow = {
+      'ID_Log': logId,
+      'Tanggal & Waktu': nowStr,
+      'Pengguna': username,
+      'Aktivitas': `${action.toUpperCase()} - ${sheetName}`,
+      'Detail': detailMsg
+    };
+
+    // Trigger silent write to 'Logs'
+    await executeWriteAction({ ...config, activeSheet: 'Logs' }, 'create', logRow);
+  } catch (err) {
+    console.error('Error logging user action:', err);
+  }
+}
+
 // Write actions
 export async function executeWriteAction(
   config: SheetConfig,
@@ -364,6 +423,9 @@ export async function executeWriteAction(
     }
     
     saveLocalData(config.activeSheet, { headers: current.headers, rows: newRows });
+    
+    // Log asynchronously
+    logAction(config, action, config.activeSheet, rowData, idValue);
     return true;
   }
 
@@ -393,6 +455,8 @@ export async function executeWriteAction(
       }
       
       if (result && result.status === 'success') {
+        // Log asynchronously
+        logAction(config, action, config.activeSheet, rowData, idValue);
         return true;
       } else {
         throw new Error(result?.message || 'Aksi gagal dieksekusi di Spreadsheet.');
@@ -533,7 +597,9 @@ function setupDefaultHeaders(sheet, name) {
     'Blowhole_Sample': ['ID_Blowhole_Sample', 'NAMA SATWA', 'KATEGORI', 'DATE', 'DOCTOR'],
     'Stomach_Sample': ['ID_Stomach_Sample', 'NAMA SATWA', 'KATEGORI', 'DATE', 'DOCTOR', 'NOTE'],
     'Tubing': ['ID_Tubing', 'NAMA SATWA', 'KATEGORI', 'DATE', 'ML', 'NOTE'],
-    'Others': ['ID_Others', 'NAMA SATWA', 'KATEGORI', 'DATE', 'INFORMATION']
+    'Others': ['ID_Others', 'NAMA SATWA', 'KATEGORI', 'DATE', 'INFORMATION'],
+    'Users': ['Username', 'Password', 'Nama Lengkap', 'Role'],
+    'Logs': ['ID_Log', 'Tanggal & Waktu', 'Pengguna', 'Aktivitas', 'Detail']
   };
   
   var headers = headersMap[name] || ["ID", "NAMA SATWA", "KATEGORI", "TANGGAL", "KETERANGAN"];

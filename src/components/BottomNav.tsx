@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   LayoutDashboard, Heart, Pill, Droplet, Scale, 
   Wind, Activity, Thermometer, FileText, Database,
-  Sun, Moon, Download
+  Sun, Moon, Download, LogOut, BarChart2, History, Users
 } from 'lucide-react';
 
 interface BottomNavProps {
@@ -12,6 +12,8 @@ interface BottomNavProps {
   theme: 'light' | 'dark';
   toggleTheme: () => void;
   onExport: () => void;
+  onLogout?: () => void;
+  userRole?: 'admin' | 'user';
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({ 
@@ -20,9 +22,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   isOnline,
   theme,
   toggleTheme,
-  onExport
+  onExport,
+  onLogout,
+  userRole
 }) => {
-  const tabs = [
+  const allTabs = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'Satwa', label: 'Satwa', icon: Heart },
     { id: 'Medicine', label: 'Medicine', icon: Pill },
@@ -33,6 +37,16 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     { id: 'Tubing', label: 'Tubing', icon: Thermometer },
     { id: 'Others', label: 'Others', icon: FileText }
   ];
+
+  // Admin tabs: Grafik Ringkasan, Log Aktivitas, Manajemen Pengguna
+  const adminTabs = [
+    { id: 'dashboard', label: 'Grafik Ringkasan', icon: BarChart2 },
+    { id: 'admin-logs', label: 'Log Aktivitas', icon: History },
+    { id: 'admin-users', label: 'Manajemen User', icon: Users }
+  ];
+
+  // Filter tabs: Admin gets their own set, user gets all sheet tabs
+  const tabs = userRole === 'admin' ? adminTabs : allTabs;
 
   return (
     <>
@@ -47,6 +61,24 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             {isOnline ? 'Online' : 'Offline'}
           </span>
         </div>
+
+        {/* Admin role badge */}
+        {userRole === 'admin' && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 12px',
+            marginBottom: 16,
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--primary-container)',
+            border: '1px solid rgba(168,199,250,0.15)',
+          }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--on-primary-container)', letterSpacing: '0.3px' }}>
+              🛡️ Mode Administrator
+            </span>
+          </div>
+        )}
         <ul className="sidebar-menu">
           {tabs.map((tab) => {
             const IconComponent = tab.icon;
@@ -67,7 +99,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           })}
         </ul>
 
-        {/* Sidebar Footer with Theme and Export controls */}
+        {/* Sidebar Footer with Theme, Export, and Logout controls */}
         <div className="sidebar-footer">
           <button 
             className="sidebar-btn" 
@@ -77,14 +109,30 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
           </button>
-          <button 
-            className="sidebar-btn" 
-            onClick={onExport} 
-            title="Ekspor Seluruh Data ke Excel"
-          >
-            <Download size={16} />
-            <span>Export Excel</span>
-          </button>
+          
+          {/* Hide export excel for admin since they don't see animal telemetry */}
+          {userRole !== 'admin' && (
+            <button 
+              className="sidebar-btn" 
+              onClick={onExport} 
+              title="Ekspor Seluruh Data ke Excel"
+            >
+              <Download size={16} />
+              <span>Export Excel</span>
+            </button>
+          )}
+
+          {onLogout && (
+            <button 
+              className="sidebar-btn" 
+              onClick={onLogout} 
+              title="Keluar dari Akun"
+              style={{ color: 'var(--danger)', marginTop: 4 }}
+            >
+              <LogOut size={16} />
+              <span>Log Out</span>
+            </button>
+          )}
         </div>
       </aside>
 
