@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { fetchSheetData, getConfig, fetchDashboardCounts, initializeSpreadsheetData } from './utils/sheetSync';
 import type { SheetConfig, SheetData } from './utils/sheetSync';
 import { BottomNav } from './components/BottomNav';
@@ -165,6 +166,7 @@ function App() {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-primary)' }}>
         <Login config={config} onLoginSuccess={handleLoginSuccess} />
+        <Analytics />
       </div>
     );
   }
@@ -286,6 +288,7 @@ function App() {
           </>
         )}
       </main>
+      <Analytics />
     </div>
   );
 }
