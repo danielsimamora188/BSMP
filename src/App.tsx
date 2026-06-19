@@ -9,6 +9,7 @@ import { Login } from './components/Login';
 import { AdminDashboard } from './components/AdminDashboard';
 import { exportAllToExcel } from './utils/excelExport';
 import { Database, RefreshCw, AlertTriangle, Sun, Moon, Download, LogOut } from 'lucide-react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function App() {
   const [config, setConfig] = useState<SheetConfig>(getConfig());
@@ -118,6 +119,7 @@ function App() {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-primary)' }}>
         <Login config={config} onLoginSuccess={handleLoginSuccess} />
+        <SpeedInsights />
       </div>
     );
   }
@@ -239,6 +241,7 @@ function App() {
           </>
         )}
       </main>
+      <SpeedInsights />
     </div>
   );
 }
