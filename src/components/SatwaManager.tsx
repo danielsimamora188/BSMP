@@ -566,7 +566,7 @@ export const SatwaManager: React.FC<SatwaManagerProps> = ({ data, config, onRefr
                           type="date"
                           className="input"
                           value={formatDateForInput(formData[header] || '')}
-                          onChange={e => setFormData({ ...formData, [header]: e.target.value })}
+                          onChange={e => setFormData({ ...formData, [header]: formatDateIndonesian(e.target.value) })}
                         />
                       </div>
                     );

@@ -6,6 +6,112 @@ import {
   Filter, CheckCircle, XCircle, ChevronRight
 } from 'lucide-react';
 
+/* ─── Date formatting helpers ─── */
+const INDONESIAN_MONTHS = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
+const INDONESIAN_MONTHS_MAP: Record<string, number> = {
+  'jan': 0, 'januari': 0, 'january': 0,
+  'feb': 1, 'februari': 1, 'february': 1,
+  'mar': 2, 'maret': 2, 'march': 2,
+  'apr': 3, 'april': 3,
+  'mei': 4, 'may': 4,
+  'jun': 5, 'juni': 5, 'june': 5,
+  'jul': 6, 'juli': 6, 'july': 6,
+  'agu': 7, 'agustus': 7, 'august': 7, 'agt': 7,
+  'sep': 8, 'september': 8,
+  'okt': 9, 'oktober': 9, 'october': 9,
+  'nov': 10, 'november': 10,
+  'des': 11, 'desember': 11, 'december': 11
+};
+
+const padDay = (d: number) => (d < 10 ? `0${d}` : `${d}`);
+
+/** Convert any date string to "dd MMMM yyyy" Indonesian format for display */
+const formatDateIndonesian = (dateStr: string): string => {
+  if (!dateStr || dateStr === '-' || dateStr === 'null') return '-';
+  const clean = dateStr.trim();
+
+  // 1. Already "dd MonthName yyyy" (with any month name)
+  const parts = clean.split(/\s+/);
+  if (parts.length === 3) {
+    const day = parseInt(parts[0], 10);
+    const mName = parts[1].toLowerCase();
+    const year = parseInt(parts[2], 10);
+    if (!isNaN(day) && !isNaN(year) && year > 1900 && year < 2100) {
+      const mIdx = INDONESIAN_MONTHS_MAP[mName];
+      if (mIdx !== undefined) {
+        return `${padDay(day)} ${INDONESIAN_MONTHS[mIdx]} ${year}`;
+      }
+    }
+  }
+
+  // 2. "dd/mm/yyyy" or "dd-mm-yyyy"
+  const dmyMatch = clean.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (dmyMatch) {
+    const d = parseInt(dmyMatch[1], 10);
+    const m = parseInt(dmyMatch[2], 10) - 1;
+    const y = parseInt(dmyMatch[3], 10);
+    if (m >= 0 && m < 12) return `${padDay(d)} ${INDONESIAN_MONTHS[m]} ${y}`;
+  }
+
+  // 3. "yyyy-mm-dd" (from <input type="date">)
+  const ymdMatch = clean.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (ymdMatch) {
+    const y = parseInt(ymdMatch[1], 10);
+    const m = parseInt(ymdMatch[2], 10) - 1;
+    const d = parseInt(ymdMatch[3], 10);
+    if (m >= 0 && m < 12) return `${padDay(d)} ${INDONESIAN_MONTHS[m]} ${y}`;
+  }
+
+  // 4. JS Date fallback
+  const parsed = new Date(clean);
+  if (!isNaN(parsed.getTime())) {
+    return `${padDay(parsed.getDate())} ${INDONESIAN_MONTHS[parsed.getMonth()]} ${parsed.getFullYear()}`;
+  }
+
+  return clean;
+};
+
+/** Convert stored date (any format) to "yyyy-mm-dd" for <input type="date"> value */
+const formatDateForInput = (dateStr: string): string => {
+  if (!dateStr || dateStr === '-') return '';
+  const clean = dateStr.trim();
+
+  const parts = clean.split(/\s+/);
+  if (parts.length === 3) {
+    const d = parseInt(parts[0], 10);
+    const mIdx = INDONESIAN_MONTHS_MAP[parts[1].toLowerCase()];
+    const y = parseInt(parts[2], 10);
+    if (!isNaN(d) && mIdx !== undefined && !isNaN(y)) {
+      return `${y}-${String(mIdx + 1).padStart(2, '0')}-${padDay(d)}`;
+    }
+  }
+
+  const dmyMatch = clean.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (dmyMatch) {
+    const d = parseInt(dmyMatch[1], 10);
+    const m = parseInt(dmyMatch[2], 10);
+    const y = parseInt(dmyMatch[3], 10);
+    return `${y}-${String(m).padStart(2, '0')}-${padDay(d)}`;
+  }
+
+  const ymdMatch = clean.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (ymdMatch) return clean.replace(/\//g, '-');
+
+  const parsed = new Date(clean);
+  if (!isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, '0');
+    const d = String(parsed.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  return '';
+};
+
 interface DataManagerProps {
   data: SheetData;
   config: SheetConfig;
@@ -174,7 +280,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ data, config, onRefres
           <div className="list-row-body">
             <span className="list-row-title">{row['NAME OF MEDICINE']}</span>
             <span className="list-row-sub">
-              {row['NAMA SATWA']} &nbsp;·&nbsp; {row['START']} → {row['STOP'] === '-' || !row['STOP'] ? 'Sekarang' : row['STOP']}
+              {row['NAMA SATWA']} &nbsp;·&nbsp; {formatDateIndonesian(row['START'])} → {row['STOP'] === '-' || !row['STOP'] ? 'Sekarang' : formatDateIndonesian(row['STOP'])}
             </span>
             {row['NOTE'] && row['NOTE'] !== '-' && (
               <span className="list-row-note">{row['NOTE']}</span>
@@ -206,7 +312,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ data, config, onRefres
           </div>
           <div className="list-row-body">
             <span className="list-row-title">{row['NAMA SATWA']}</span>
-            <span className="list-row-sub">{row['DATE']} &nbsp;·&nbsp; {row['DOCTOR']}</span>
+            <span className="list-row-sub">{formatDateIndonesian(row['DATE'])} &nbsp;·&nbsp; {row['DOCTOR']}</span>
           </div>
         </div>
         <div className="list-row-meta">
@@ -230,7 +336,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ data, config, onRefres
         </div>
         <div className="list-row-body">
           <span className="list-row-title">{row['NAMA SATWA']}</span>
-          <span className="list-row-sub">{row['DATE']}{row['NOTE'] && row['NOTE'] !== '' ? ` · ${row['NOTE']}` : ''}</span>
+          <span className="list-row-sub">{formatDateIndonesian(row['DATE'])}{row['NOTE'] && row['NOTE'] !== '' ? ` · ${row['NOTE']}` : ''}</span>
         </div>
       </div>
       <div className="list-row-meta">
@@ -251,7 +357,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ data, config, onRefres
         </div>
         <div className="list-row-body">
           <span className="list-row-title">{row['NAMA SATWA']}</span>
-          <span className="list-row-sub">{row['DATE']}{row['NOTE'] && row['NOTE'] !== '' ? ` · ${row['NOTE']}` : ''}</span>
+          <span className="list-row-sub">{formatDateIndonesian(row['DATE'])}{row['NOTE'] && row['NOTE'] !== '' ? ` · ${row['NOTE']}` : ''}</span>
         </div>
       </div>
       <div className="list-row-meta">
@@ -272,7 +378,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ data, config, onRefres
         </div>
         <div className="list-row-body">
           <span className="list-row-title">{row['NAMA SATWA']}</span>
-          <span className="list-row-sub">{row['DATE']} &nbsp;·&nbsp; {row['DOCTOR']}</span>
+          <span className="list-row-sub">{formatDateIndonesian(row['DATE'])} &nbsp;·&nbsp; {row['DOCTOR']}</span>
           {row['NOTE'] && row['NOTE'] !== '-' && (
             <span className="list-row-note">{row['NOTE']}</span>
           )}
@@ -295,7 +401,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ data, config, onRefres
         </div>
         <div className="list-row-body">
           <span className="list-row-title">{row['NAMA SATWA']}</span>
-          <span className="list-row-sub">{row['DATE']}</span>
+          <span className="list-row-sub">{formatDateIndonesian(row['DATE'])}</span>
           {row['INFORMATION'] && (
             <span className="list-row-note">{row['INFORMATION']}</span>
           )}
@@ -499,8 +605,8 @@ export const DataManager: React.FC<DataManagerProps> = ({ data, config, onRefres
                       <div key={header}>
                         <label className="stat-label" style={{ marginBottom: 6, display: 'block' }}>{header}</label>
                         <input type="date" className="input"
-                          value={formData[header] || ''}
-                          onChange={e => setFormData({ ...formData, [header]: e.target.value })} />
+                          value={formatDateForInput(formData[header] || '')}
+                          onChange={e => setFormData({ ...formData, [header]: formatDateIndonesian(e.target.value) })} />
                       </div>
                     );
 
