@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { fetchSheetData, getConfig } from './utils/sheetSync';
 import type { SheetConfig, SheetData } from './utils/sheetSync';
 import { BottomNav } from './components/BottomNav';
@@ -239,6 +240,7 @@ function App() {
           </>
         )}
       </main>
+      <Analytics />
     </div>
   );
 }
