@@ -22,14 +22,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, theme, counts, avgWe
       if (counts && counts[key] !== undefined) {
         return counts[key];
       }
-      try {
-        const val = localStorage.getItem(`sheetsync_dataset_${key}`);
-        if (val) {
-          const parsed = JSON.parse(val);
-          return parsed.rows?.length || 0;
-        }
-      } catch (e) {}
-      // Default fallbacks from INITIAL_DATASETS
+      // Fallback dari INITIAL_DATASETS
       switch (key) {
         case 'Satwa': return 7;
         case 'Medicine': return 28;

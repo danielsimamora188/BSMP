@@ -116,9 +116,11 @@ interface DataManagerProps {
   data: SheetData;
   config: SheetConfig;
   onRefresh: () => void;
+  /** Daftar nama satwa yang diambil dari sheet Satwa (diisi dari App.tsx) */
+  satwaNames?: string[];
 }
 
-export const DataManager: React.FC<DataManagerProps> = ({ data, config, onRefresh }) => {
+export const DataManager: React.FC<DataManagerProps> = ({ data, config, onRefresh, satwaNames: satwaNamesProp }) => {
   const { headers, rows } = data;
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -142,8 +144,14 @@ export const DataManager: React.FC<DataManagerProps> = ({ data, config, onRefres
     return headers.find(h => h.toUpperCase().includes('NAMA') || h.toUpperCase().includes('SATWA')) || '';
   }, [headers]);
 
-  // Dynamically load unique animal names from the current dataset rows
+  // Daftar nama satwa: prioritaskan prop dari App (diambil dari Satwa sheet),
+  // fallback ke nama-nama unik yang ada di baris data saat ini.
   const animalList = useMemo(() => {
+    // Gunakan prop satwaNames jika tersedia dan tidak kosong
+    if (satwaNamesProp && satwaNamesProp.length > 0) {
+      return satwaNamesProp;
+    }
+    // Fallback: ambil dari baris data aktif
     if (!animalHeader) return [];
     const names = new Set<string>();
     rows.forEach(r => {
@@ -152,11 +160,8 @@ export const DataManager: React.FC<DataManagerProps> = ({ data, config, onRefres
         names.add(String(name).trim().toUpperCase());
       }
     });
-    if (names.size === 0) {
-      return ['LEON', 'MANYU', 'CENGHO', 'ABU', 'SAKA', 'SINYORITA', 'WINTER'];
-    }
     return Array.from(names);
-  }, [rows, animalHeader]);
+  }, [satwaNamesProp, rows, animalHeader]);
 
   // Search & Filter rows
   const filteredRows = useMemo(() => {
@@ -581,11 +586,15 @@ export const DataManager: React.FC<DataManagerProps> = ({ data, config, onRefres
                     if (isAnimal) return (
                       <div key={header}>
                         <label className="stat-label" style={{ marginBottom: 6, display: 'block' }}>{header}</label>
-                        <select className="input" value={formData[header] || ''}
+                        <select className="input" value={formData[header] || (animalList[0] || '')}
                           onChange={e => setFormData({ ...formData, [header]: e.target.value })}>
-                          {['LEON','MANYU','CENGHO','ABU','SAKA','SINYORITA','WINTER'].map(n => (
-                            <option key={n} value={n}>{n}</option>
-                          ))}
+                          {animalList.length === 0 ? (
+                            <option value="">— Belum ada satwa —</option>
+                          ) : (
+                            animalList.map(n => (
+                              <option key={n} value={n}>{n}</option>
+                            ))
+                          )}
                         </select>
                       </div>
                     );

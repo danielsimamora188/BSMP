@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchSheetData, getConfig, fetchDashboardCounts, initializeSpreadsheetData } from './utils/sheetSync';
+import { fetchSheetData, getConfig, fetchDashboardCounts, initializeSpreadsheetData, fetchSatwaNames } from './utils/sheetSync';
 import type { SheetConfig, SheetData } from './utils/sheetSync';
 import { BottomNav } from './components/BottomNav';
 import { Dashboard } from './components/Dashboard';
@@ -24,7 +24,10 @@ function App() {
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [exportToast, setExportToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // User state for login system
+  // Daftar nama satwa yang diambil dari sheet Satwa (bukan hardcoded)
+  const [satwaNames, setSatwaNames] = useState<string[]>([]);
+
+  // User state for login system — stored in localStorage for session persistence only
   const [currentUser, setCurrentUser] = useState<{ username: string; name: string; role: 'admin' | 'user' } | null>(() => {
     const saved = localStorage.getItem('bsmp_current_user');
     if (saved) {
@@ -37,7 +40,7 @@ function App() {
     return null;
   });
 
-  // Manage Theme (Dark / Light)
+  // Manage Theme (Dark / Light) — stored in localStorage for preference only
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('bsmp_theme') as 'light' | 'dark') || 'dark';
   });
@@ -69,6 +72,16 @@ function App() {
       setIsExporting(false);
     }
   };
+
+  // Ambil daftar nama satwa dari sheet Satwa
+  const loadSatwaNames = useCallback(async (activeConfig: SheetConfig) => {
+    try {
+      const names = await fetchSatwaNames(activeConfig);
+      setSatwaNames(names);
+    } catch (e) {
+      console.error('Failed to load satwa names:', e);
+    }
+  }, []);
 
   // Fetch sheet data from chosen source
   const loadData = async (activeConfig: SheetConfig) => {
@@ -123,6 +136,11 @@ function App() {
       } else {
         setSheetData(result);
       }
+
+      // Setelah data sheet dimuat, refresh daftar satwa jika baru saja dari Satwa tab
+      if (activeConfig.activeSheet === 'Satwa') {
+        await loadSatwaNames(activeConfig);
+      }
       
       setConnectionStatus({
         status: 'success',
@@ -162,9 +180,22 @@ function App() {
     }
   }, [currentTab, currentUser]);
 
+  // Load satwa names on initial login
+  useEffect(() => {
+    if (currentUser) {
+      loadSatwaNames(config);
+    }
+  }, [currentUser]);
+
   const handleRefresh = () => {
     loadData(config);
   };
+
+  // Refresh satwa names setelah satwa baru ditambahkan
+  const handleSatwaRefresh = useCallback(async () => {
+    await loadSatwaNames(config);
+    handleRefresh();
+  }, [config]);
 
   const handleLoginSuccess = (user: { username: string; name: string; role: 'admin' | 'user' }) => {
     setCurrentUser(user);
@@ -304,7 +335,7 @@ function App() {
               >
                 <AlertTriangle size={18} className="c-danger" style={{ flexShrink: 0 }} />
                 <span style={{ fontSize: '0.78rem', color: 'var(--danger)' }}>
-                  Gagal menghubungkan ke lembar kerja. Menggunakan cache lokal sementara.
+                  Gagal menghubungkan ke lembar kerja. Periksa koneksi internet Anda.
                 </span>
               </div>
             )}
@@ -326,11 +357,11 @@ function App() {
             )}
 
             {currentTab === 'Satwa' && (
-              <SatwaManager data={sheetData} config={config} onRefresh={handleRefresh} />
+              <SatwaManager data={sheetData} config={config} onRefresh={handleSatwaRefresh} />
             )}
 
             {currentTab !== 'dashboard' && currentTab !== 'Satwa' && !currentTab.startsWith('admin-') && (
-              <DataManager data={sheetData} config={config} onRefresh={handleRefresh} />
+              <DataManager data={sheetData} config={config} onRefresh={handleRefresh} satwaNames={satwaNames} />
             )}
           </>
         )}

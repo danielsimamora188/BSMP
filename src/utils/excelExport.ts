@@ -1,4 +1,4 @@
-import { getLocalData, fetchSheetData } from './sheetSync';
+import { INITIAL_DATASETS, fetchSheetData } from './sheetSync';
 import type { SheetConfig } from './sheetSync';
 
 const DATA_SHEET_NAMES = [
@@ -14,7 +14,7 @@ const DATA_SHEET_NAMES = [
 
 /**
  * Fetch all sheet data and produce an Excel (SpreadsheetML) download.
- * Works in all three modes: demo (localStorage), csv (falls back to localStorage),
+ * Works in all three modes: demo (INITIAL_DATASETS), csv (INITIAL_DATASETS fallback),
  * and crud (fetches live data from the GAS server).
  * All date columns are normalised to "dd MMMM yyyy" (Indonesian) format.
  */
@@ -35,16 +35,17 @@ export async function exportAllToExcel(config?: SheetConfig): Promise<void> {
   for (const sheetName of DATA_SHEET_NAMES) {
     let data: { headers: string[]; rows: Record<string, any>[] };
 
-    if (config && (config.mode === 'crud' || config.mode === 'csv')) {
+    if (config && config.mode === 'crud') {
       try {
         data = await fetchSheetData({ ...config, activeSheet: sheetName });
       } catch (e) {
-        // Fall back to local cache if server request fails
-        console.warn(`Failed to fetch ${sheetName} from server, using local cache.`, e);
-        data = getLocalData(sheetName);
+        // Fallback ke INITIAL_DATASETS jika server gagal
+        console.warn(`Failed to fetch ${sheetName} from server, using preset data.`, e);
+        data = INITIAL_DATASETS[sheetName] || { headers: [], rows: [] };
       }
     } else {
-      data = getLocalData(sheetName);
+      // demo & csv mode: gunakan INITIAL_DATASETS
+      data = INITIAL_DATASETS[sheetName] || { headers: [], rows: [] };
     }
 
     const { headers, rows } = data;

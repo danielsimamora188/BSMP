@@ -196,25 +196,8 @@ export const INITIAL_DATASETS: Record<string, SheetData> = {
   }
 };
 
-// Local Storage Helper
-const STORAGE_KEY_PREFIX = 'sheetsync_dataset_';
+// ─── Config Storage (localStorage only for user session preferences, NOT data) ───
 const CONFIG_KEY = 'sheetsync_config';
-
-export function saveLocalData(sheetName: string, data: SheetData) {
-  localStorage.setItem(STORAGE_KEY_PREFIX + sheetName, JSON.stringify(data));
-}
-
-export function getLocalData(sheetName: string): SheetData {
-  const saved = localStorage.getItem(STORAGE_KEY_PREFIX + sheetName);
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch (e) {
-      // ignore
-    }
-  }
-  return INITIAL_DATASETS[sheetName] || { headers: [], rows: [] };
-}
 
 export function saveConfig(config: SheetConfig) {
   localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
@@ -244,6 +227,40 @@ export function getConfig(): SheetConfig {
     gasUrl: defaultGasUrl,
     activeSheet: SHEET_NAMES[0]
   };
+}
+
+// ─── Fetch list of animal names from the Satwa sheet ───
+export async function fetchSatwaNames(config: SheetConfig): Promise<string[]> {
+  const fallback = INITIAL_DATASETS['Satwa'].rows
+    .map(r => String(r['Nama Satwa'] || '').trim().toUpperCase())
+    .filter(n => n && n !== '-');
+
+  if (config.mode === 'demo') {
+    return fallback;
+  }
+
+  if (config.mode === 'crud') {
+    if (!config.gasUrl) return fallback;
+    try {
+      const fetchUrl = `${config.gasUrl}${config.gasUrl.includes('?') ? '&' : '?'}action=read&sheetName=Satwa`;
+      const response = await fetch(fetchUrl);
+      if (!response.ok) return fallback;
+      const resJson = await response.json();
+      if (resJson.status === 'success' && Array.isArray(resJson.data) && resJson.data.length > 0) {
+        const names: string[] = [];
+        resJson.data.forEach((row: Record<string, any>) => {
+          const name = String(row['Nama Satwa'] || '').trim().toUpperCase();
+          if (name && name !== '-' && name !== '') names.push(name);
+        });
+        return names.length > 0 ? names : fallback;
+      }
+      return fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  return fallback;
 }
 
 // Robust CSV Parser
@@ -319,10 +336,11 @@ export function parseCSV(text: string): SheetData {
   return { headers, rows: items };
 }
 
-// Fetch manager
+// Fetch manager — all data comes from spreadsheet/INITIAL_DATASETS, never localStorage
 export async function fetchSheetData(config: SheetConfig): Promise<SheetData> {
   if (config.mode === 'demo') {
-    return getLocalData(config.activeSheet);
+    // Return directly from INITIAL_DATASETS — no localStorage
+    return INITIAL_DATASETS[config.activeSheet] || { headers: [], rows: [] };
   }
 
   if (config.mode === 'csv') {
@@ -393,10 +411,10 @@ export async function fetchDashboardCounts(config: SheetConfig): Promise<{ count
   if (config.mode === 'demo') {
     const counts: Record<string, number> = {};
     SHEET_NAMES.forEach(name => {
-      counts[name] = getLocalData(name).rows.length;
+      counts[name] = (INITIAL_DATASETS[name]?.rows || []).length;
     });
-    const weighingData = getLocalData('Weighing');
-    const avgWeight = getAvgWeightFromRows(weighingData.rows);
+    const weighingData = INITIAL_DATASETS['Weighing']?.rows || [];
+    const avgWeight = getAvgWeightFromRows(weighingData);
     return { counts, avgWeight };
   }
 
@@ -426,13 +444,13 @@ export async function fetchDashboardCounts(config: SheetConfig): Promise<{ count
         throw new Error(resJson.message || 'Respons API bermasalah');
       }
     } catch (e: any) {
-      console.warn('Dashboard fetch failed, falling back to local fallback:', e);
+      console.warn('Dashboard fetch failed, falling back to INITIAL_DATASETS:', e);
       const counts: Record<string, number> = {};
       SHEET_NAMES.forEach(name => {
-        counts[name] = getLocalData(name).rows.length;
+        counts[name] = INITIAL_DATASETS[name]?.rows.length || 0;
       });
-      const weighingData = getLocalData('Weighing');
-      const avgWeight = getAvgWeightFromRows(weighingData.rows);
+      const weighingData = INITIAL_DATASETS['Weighing']?.rows || [];
+      const avgWeight = getAvgWeightFromRows(weighingData);
       return { counts, avgWeight };
     }
   }
@@ -440,7 +458,7 @@ export async function fetchDashboardCounts(config: SheetConfig): Promise<{ count
   return { counts: {}, avgWeight: '0 Kg' };
 }
 
-// Initialize empty Google Sheets database with local storage data (previous user data) or presets
+// Initialize empty Google Sheets database with INITIAL_DATASETS presets
 export async function initializeSpreadsheetData(config: SheetConfig): Promise<boolean> {
   if (config.mode !== 'crud') return false;
   if (!config.gasUrl) throw new Error('URL Apps Script Web App tidak boleh kosong!');
@@ -448,9 +466,9 @@ export async function initializeSpreadsheetData(config: SheetConfig): Promise<bo
     const cleanDatasets: Record<string, any[]> = {};
     
     SHEET_NAMES.forEach(sheetName => {
-      const localData = getLocalData(sheetName);
-      if (localData && localData.rows) {
-        cleanDatasets[sheetName] = localData.rows.map(row => {
+      const data = INITIAL_DATASETS[sheetName];
+      if (data && data.rows) {
+        cleanDatasets[sheetName] = data.rows.map(row => {
           const cleanRow = { ...row };
           delete cleanRow['__rowNum__'];
           return cleanRow;
@@ -533,7 +551,7 @@ async function logAction(config: SheetConfig, action: string, sheetName: string,
   }
 }
 
-// Write actions
+// Write actions — demo mode uses in-memory INITIAL_DATASETS (not localStorage)
 export async function executeWriteAction(
   config: SheetConfig,
   action: 'create' | 'update' | 'delete',
@@ -541,7 +559,7 @@ export async function executeWriteAction(
   idValue?: any
 ): Promise<boolean> {
   if (config.mode === 'demo') {
-    const current = getLocalData(config.activeSheet);
+    const current = INITIAL_DATASETS[config.activeSheet] || { headers: [], rows: [] };
     const idKey = current.headers[0];
 
     let newRows = [...current.rows];
@@ -559,7 +577,8 @@ export async function executeWriteAction(
       newRows = newRows.filter(row => String(row[idKey]) !== String(idValue));
     }
     
-    saveLocalData(config.activeSheet, { headers: current.headers, rows: newRows });
+    // Update in-memory INITIAL_DATASETS so UI is consistent within the session
+    INITIAL_DATASETS[config.activeSheet] = { headers: current.headers, rows: newRows };
     
     // Log asynchronously
     logAction(config, action, config.activeSheet, rowData, idValue);
