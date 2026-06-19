@@ -31,7 +31,8 @@ export const INITIAL_DATASETS: Record<string, SheetData> = {
     headers: [
       'Nama Satwa', 'Species', 'Gambar', 'Jenis Kelamin', 'Kedatangan SBJ', 'Kedatangan TSI', 
       'Ekor (P) (cm)', 'Ekor (L) (cm)', 'Flipper (P) (cm)', 'Flipper (L) (cm)', 
-      'Dorsal (L) (cm)', 'Dorsal (T) (cm)', 'P. Tubuh (cm)', 'P. Moncong (cm)', 'Ling. Badan (cm)'
+      'Dorsal (L) (cm)', 'Dorsal (T) (cm)', 'P. Tubuh (cm)', 'P. Moncong (cm)', 'Ling. Badan (cm)',
+      'Status Kesehatan', 'Keterangan'
     ],
     rows: [
       { 
@@ -42,7 +43,8 @@ export const INITIAL_DATASETS: Record<string, SheetData> = {
         'Kedatangan SBJ': '21 April 2014', 
         'Kedatangan TSI': '13 Juni 2014', 
         'Ekor (P) (cm)': '56', 'Ekor (L) (cm)': '18', 'Flipper (P) (cm)': '34', 'Flipper (L) (cm)': '18', 
-        'Dorsal (L) (cm)': '29', 'Dorsal (T) (cm)': '22', 'P. Tubuh (cm)': '230', 'P. Moncong (cm)': '14', 'Ling. Badan (cm)': '112' 
+        'Dorsal (L) (cm)': '29', 'Dorsal (T) (cm)': '22', 'P. Tubuh (cm)': '230', 'P. Moncong (cm)': '14', 'Ling. Badan (cm)': '112',
+        'Status Kesehatan': 'Sehat', 'Keterangan': 'Tursiops Aduncus (SBJ: 2014)'
       },
       { 
         'Nama Satwa': 'MANYU', 
@@ -52,7 +54,8 @@ export const INITIAL_DATASETS: Record<string, SheetData> = {
         'Kedatangan SBJ': '8 Januari 2016', 
         'Kedatangan TSI': '30 Maret 2016', 
         'Ekor (P) (cm)': '-', 'Ekor (L) (cm)': '-', 'Flipper (P) (cm)': '34', 'Flipper (L) (cm)': '14', 
-        'Dorsal (L) (cm)': '24', 'Dorsal (T) (cm)': '21', 'P. Tubuh (cm)': '211', 'P. Moncong (cm)': '13', 'Ling. Badan (cm)': '-' 
+        'Dorsal (L) (cm)': '24', 'Dorsal (T) (cm)': '21', 'P. Tubuh (cm)': '211', 'P. Moncong (cm)': '13', 'Ling. Badan (cm)': '-',
+        'Status Kesehatan': 'Sehat', 'Keterangan': 'Tursiops Aduncus (SBJ: 2016)'
       },
       { 
         'Nama Satwa': 'CENGHO', 
@@ -62,7 +65,8 @@ export const INITIAL_DATASETS: Record<string, SheetData> = {
         'Kedatangan SBJ': '-', 
         'Kedatangan TSI': '15 Januari 2016', 
         'Ekor (P) (cm)': '58', 'Ekor (L) (cm)': '20', 'Flipper (P) (cm)': '36', 'Flipper (L) (cm)': '16', 
-        'Dorsal (L) (cm)': '21', 'Dorsal (T) (cm)': '36', 'P. Tubuh (cm)': '213', 'P. Moncong (cm)': '16', 'Ling. Badan (cm)': '110' 
+        'Dorsal (L) (cm)': '21', 'Dorsal (T) (cm)': '36', 'P. Tubuh (cm)': '213', 'P. Moncong (cm)': '16', 'Ling. Badan (cm)': '110',
+        'Status Kesehatan': 'Sehat', 'Keterangan': 'Tursiops Aduncus (TSI: 2016)'
       },
       { 
         'Nama Satwa': 'ABU', 
@@ -72,22 +76,26 @@ export const INITIAL_DATASETS: Record<string, SheetData> = {
         'Kedatangan SBJ': '8 Januari 2016', 
         'Kedatangan TSI': '23 Maret 2016', 
         'Ekor (P) (cm)': '52', 'Ekor (L) (cm)': '18', 'Flipper (P) (cm)': '39', 'Flipper (L) (cm)': '19', 
-        'Dorsal (L) (cm)': '20', 'Dorsal (T) (cm)': '38', 'P. Tubuh (cm)': '216', 'P. Moncong (cm)': '14', 'Ling. Badan (cm)': '213' 
+        'Dorsal (L) (cm)': '20', 'Dorsal (T) (cm)': '38', 'P. Tubuh (cm)': '216', 'P. Moncong (cm)': '14', 'Ling. Badan (cm)': '213',
+        'Status Kesehatan': 'Sehat', 'Keterangan': 'Tursiops Aduncus (SBJ: 2016)'
       },
       { 
         'Nama Satwa': 'SAKA', 'Species': '-', 'Gambar': '-', 'Jenis Kelamin': '-', 'Kedatangan SBJ': '-', 'Kedatangan TSI': '-', 
         'Ekor (P) (cm)': '-', 'Ekor (L) (cm)': '-', 'Flipper (P) (cm)': '-', 'Flipper (L) (cm)': '-', 
-        'Dorsal (L) (cm)': '-', 'Dorsal (T) (cm)': '-', 'P. Tubuh (cm)': '-', 'P. Moncong (cm)': '-', 'Ling. Badan (cm)': '-' 
+        'Dorsal (L) (cm)': '-', 'Dorsal (T) (cm)': '-', 'P. Tubuh (cm)': '-', 'P. Moncong (cm)': '-', 'Ling. Badan (cm)': '-',
+        'Status Kesehatan': 'Perawatan', 'Keterangan': 'Dalam Perawatan Medis Intensif'
       },
       { 
         'Nama Satwa': 'SINYORITA', 'Species': '-', 'Gambar': '-', 'Jenis Kelamin': '-', 'Kedatangan SBJ': '-', 'Kedatangan TSI': '-', 
         'Ekor (P) (cm)': '-', 'Ekor (L) (cm)': '-', 'Flipper (P) (cm)': '-', 'Flipper (L) (cm)': '-', 
-        'Dorsal (L) (cm)': '-', 'Dorsal (T) (cm)': '-', 'P. Tubuh (cm)': '-', 'P. Moncong (cm)': '-', 'Ling. Badan (cm)': '-' 
+        'Dorsal (L) (cm)': '-', 'Dorsal (T) (cm)': '-', 'P. Tubuh (cm)': '-', 'P. Moncong (cm)': '-', 'Ling. Badan (cm)': '-',
+        'Status Kesehatan': 'Pemantauan', 'Keterangan': 'Dalam Pemantauan Berkala'
       },
       { 
         'Nama Satwa': 'WINTER', 'Species': '-', 'Gambar': '-', 'Jenis Kelamin': '-', 'Kedatangan SBJ': '-', 'Kedatangan TSI': '-', 
         'Ekor (P) (cm)': '-', 'Ekor (L) (cm)': '-', 'Flipper (P) (cm)': '-', 'Flipper (L) (cm)': '-', 
-        'Dorsal (L) (cm)': '-', 'Dorsal (T) (cm)': '-', 'P. Tubuh (cm)': '-', 'P. Moncong (cm)': '-', 'Ling. Badan (cm)': '-' 
+        'Dorsal (L) (cm)': '-', 'Dorsal (T) (cm)': '-', 'P. Tubuh (cm)': '-', 'P. Moncong (cm)': '-', 'Ling. Badan (cm)': '-',
+        'Status Kesehatan': 'Stabil', 'Keterangan': 'Kondisi Kesehatan Stabil'
       }
     ]
   },
@@ -359,14 +367,37 @@ export async function fetchSheetData(config: SheetConfig): Promise<SheetData> {
   return { headers: [], rows: [] };
 }
 
-// Fetch dashboard count summary for all sheets
-export async function fetchDashboardCounts(config: SheetConfig): Promise<Record<string, number>> {
+// Fetch dashboard count summary and stats for all sheets
+export async function fetchDashboardCounts(config: SheetConfig): Promise<{ counts: Record<string, number>; avgWeight: string }> {
+  const getAvgWeightFromRows = (rows: Record<string, any>[]): string => {
+    let totalWeight = 0;
+    let weightCount = 0;
+    rows.forEach(r => {
+      const heavyStr = String(r['HEAVY'] || '');
+      if (heavyStr) {
+        const cleanStr = heavyStr.replace(',', '.').replace(/[^0-9.]/g, '');
+        const num = parseFloat(cleanStr);
+        if (!isNaN(num)) {
+          totalWeight += num;
+          weightCount++;
+        }
+      }
+    });
+    if (weightCount > 0) {
+      const avg = totalWeight / weightCount;
+      return avg.toFixed(1).replace('.', ',') + ' Kg';
+    }
+    return '0 Kg';
+  };
+
   if (config.mode === 'demo') {
     const counts: Record<string, number> = {};
     SHEET_NAMES.forEach(name => {
       counts[name] = getLocalData(name).rows.length;
     });
-    return counts;
+    const weighingData = getLocalData('Weighing');
+    const avgWeight = getAvgWeightFromRows(weighingData.rows);
+    return { counts, avgWeight };
   }
 
   if (config.mode === 'csv') {
@@ -374,7 +405,9 @@ export async function fetchDashboardCounts(config: SheetConfig): Promise<Record<
     SHEET_NAMES.forEach(name => {
       counts[name] = INITIAL_DATASETS[name]?.rows.length || 0;
     });
-    return counts;
+    const weighingData = INITIAL_DATASETS['Weighing']?.rows || [];
+    const avgWeight = getAvgWeightFromRows(weighingData);
+    return { counts, avgWeight };
   }
 
   if (config.mode === 'crud') {
@@ -385,7 +418,10 @@ export async function fetchDashboardCounts(config: SheetConfig): Promise<Record<
       if (!response.ok) throw new Error('Gagal terhubung ke Apps Script.');
       const resJson = await response.json();
       if (resJson.status === 'success' && resJson.counts) {
-        return resJson.counts;
+        return {
+          counts: resJson.counts,
+          avgWeight: resJson.avgWeight || '98,2 Kg'
+        };
       } else {
         throw new Error(resJson.message || 'Respons API bermasalah');
       }
@@ -395,11 +431,50 @@ export async function fetchDashboardCounts(config: SheetConfig): Promise<Record<
       SHEET_NAMES.forEach(name => {
         counts[name] = getLocalData(name).rows.length;
       });
-      return counts;
+      const weighingData = getLocalData('Weighing');
+      const avgWeight = getAvgWeightFromRows(weighingData.rows);
+      return { counts, avgWeight };
     }
   }
 
-  return {};
+  return { counts: {}, avgWeight: '0 Kg' };
+}
+
+// Initialize empty Google Sheets database with preset default datasets
+export async function initializeSpreadsheetData(config: SheetConfig): Promise<boolean> {
+  if (config.mode !== 'crud') return false;
+  if (!config.gasUrl) throw new Error('URL Apps Script Web App tidak boleh kosong!');
+  try {
+    const cleanDatasets: Record<string, any[]> = {};
+    Object.keys(INITIAL_DATASETS).forEach(sheetName => {
+      cleanDatasets[sheetName] = INITIAL_DATASETS[sheetName].rows;
+    });
+
+    const response = await fetch(config.gasUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8',
+      },
+      body: JSON.stringify({
+        action: 'initialize',
+        datasets: cleanDatasets
+      })
+    });
+    
+    if (!response.ok) throw new Error('Gagal menghubungkan ke Apps Script.');
+    const text = await response.text();
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch (err) {
+      throw new Error('Respons API tidak valid JSON.');
+    }
+    
+    return result && result.status === 'success';
+  } catch (e) {
+    console.error('Database initialization failed:', e);
+    return false;
+  }
 }
 
 // Asynchronous audit logging helper
@@ -555,7 +630,35 @@ function doGet(e) {
         counts[name] = count;
       }
     }
-    return ContentService.createTextOutput(JSON.stringify({ status: "success", counts: counts }))
+
+    var avgWeight = "0 Kg";
+    var weighingSheet = ss.getSheetByName("Weighing");
+    if (weighingSheet) {
+      var wData = weighingSheet.getDataRange().getValues();
+      var wHeaders = wData[0];
+      var heavyColIndex = wHeaders.indexOf("HEAVY");
+      if (heavyColIndex !== -1) {
+        var totalWeight = 0;
+        var weightCount = 0;
+        for (var r = 1; r < wData.length; r++) {
+          var heavyStr = String(wData[r][heavyColIndex] || '');
+          if (heavyStr) {
+            var cleanStr = heavyStr.replace(',', '.').replace(/[^0-9.]/g, '');
+            var num = parseFloat(cleanStr);
+            if (!isNaN(num)) {
+              totalWeight += num;
+              weightCount++;
+            }
+          }
+        }
+        if (weightCount > 0) {
+          var avg = totalWeight / weightCount;
+          avgWeight = avg.toFixed(1).replace('.', ',') + ' Kg';
+        }
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", counts: counts, avgWeight: avgWeight }))
       .setMimeType(ContentService.MimeType.JSON);
   }
   
@@ -599,10 +702,37 @@ function doPost(e) {
   try {
     var postData = JSON.parse(e.postData.contents);
     var action = postData.action;
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    if (action === "initialize") {
+      var datasets = postData.datasets;
+      for (var name in datasets) {
+        var targetSheet = ss.getSheetByName(name);
+        if (!targetSheet) {
+          targetSheet = ss.insertSheet(name);
+          setupDefaultHeaders(targetSheet, name);
+        }
+        var values = targetSheet.getDataRange().getValues();
+        if (values.length <= 1) {
+          var rowsToInsert = datasets[name];
+          var sheetHeaders = targetSheet.getDataRange().getValues()[0];
+          for (var i = 0; i < rowsToInsert.length; i++) {
+            var rowObj = rowsToInsert[i];
+            var newRow = [];
+            for (var h = 0; h < sheetHeaders.length; h++) {
+              var header = sheetHeaders[h];
+              newRow.push(rowObj[header] !== undefined ? rowObj[header] : "");
+            }
+            targetSheet.appendRow(newRow);
+          }
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "Basis data berhasil diinisialisasi" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
     var sheetName = postData.sheetName || "Satwa";
     var rowData = postData.rowData;
-    
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName(sheetName);
     
     if (!sheet) {
@@ -673,7 +803,7 @@ function doPost(e) {
 
 function setupDefaultHeaders(sheet, name) {
   var headersMap = {
-    'Satwa': ['Nama Satwa', 'Species', 'Gambar', 'Jenis Kelamin', 'Kedatangan SBJ', 'Kedatangan TSI', 'Ekor (P) (cm)', 'Ekor (L) (cm)', 'Flipper (P) (cm)', 'Flipper (L) (cm)', 'Dorsal (L) (cm)', 'Dorsal (T) (cm)', 'P. Tubuh (cm)', 'P. Moncong (cm)', 'Ling. Badan (cm)'],
+    'Satwa': ['Nama Satwa', 'Species', 'Gambar', 'Jenis Kelamin', 'Kedatangan SBJ', 'Kedatangan TSI', 'Ekor (P) (cm)', 'Ekor (L) (cm)', 'Flipper (P) (cm)', 'Flipper (L) (cm)', 'Dorsal (L) (cm)', 'Dorsal (T) (cm)', 'P. Tubuh (cm)', 'P. Moncong (cm)', 'Ling. Badan (cm)', 'Status Kesehatan', 'Keterangan'],
     'Medicine': ['ID_medicine', 'NAMA SATWA', 'KATEGORI', 'NAME OF MEDICINE', 'START', 'STOP', 'NOTE'],
     'Blooddraw': ['ID_Blooddraw', 'NAMA SATWA', 'KATEGORI', 'DATE', 'DOCTOR', 'SUCCEEDED / FAILED'],
     'Weighing': ['ID_Weighning', 'NAMA SATWA', 'KATEGORI', 'DATE', 'HEAVY', 'NOTE'],

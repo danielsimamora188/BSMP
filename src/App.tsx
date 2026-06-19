@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchSheetData, getConfig, fetchDashboardCounts } from './utils/sheetSync';
+import { fetchSheetData, getConfig, fetchDashboardCounts, initializeSpreadsheetData } from './utils/sheetSync';
 import type { SheetConfig, SheetData } from './utils/sheetSync';
 import { BottomNav } from './components/BottomNav';
 import { Dashboard } from './components/Dashboard';
@@ -14,6 +14,7 @@ function App() {
   const [config, setConfig] = useState<SheetConfig>(getConfig());
   const [sheetData, setSheetData] = useState<SheetData>({ headers: [], rows: [] });
   const [dashboardCounts, setDashboardCounts] = useState<Record<string, number>>({});
+  const [avgWeight, setAvgWeight] = useState<string>('0 Kg');
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [connectionStatus, setConnectionStatus] = useState<{ status: 'success' | 'error' | 'idle'; message: string }>({
@@ -63,11 +64,49 @@ function App() {
     setIsLoading(true);
     try {
       if (currentTab === 'dashboard') {
-        const counts = await fetchDashboardCounts(activeConfig);
-        setDashboardCounts(counts);
+        let dashboardData = await fetchDashboardCounts(activeConfig);
+        if (activeConfig.mode === 'crud' && 
+            dashboardData.counts['Satwa'] === 0 && 
+            dashboardData.counts['Users'] === 0) {
+          setConnectionStatus({
+            status: 'idle',
+            message: 'Menginisialisasi basis data awal...'
+          });
+          const success = await initializeSpreadsheetData(activeConfig);
+          if (success) {
+            dashboardData = await fetchDashboardCounts(activeConfig);
+          }
+        }
+        setDashboardCounts(dashboardData.counts);
+        setAvgWeight(dashboardData.avgWeight);
       }
+      
       const result = await fetchSheetData(activeConfig);
-      setSheetData(result);
+      
+      // If we are in crud mode and user sheet or satwa sheet returned empty, double check if we need to initialize
+      if (activeConfig.mode === 'crud' && 
+          (activeConfig.activeSheet === 'Users' || activeConfig.activeSheet === 'Satwa') && 
+          result.rows.length === 0) {
+        const dashboardData = await fetchDashboardCounts(activeConfig);
+        if (dashboardData.counts['Satwa'] === 0 && dashboardData.counts['Users'] === 0) {
+          setConnectionStatus({
+            status: 'idle',
+            message: 'Menginisialisasi basis data...'
+          });
+          const success = await initializeSpreadsheetData(activeConfig);
+          if (success) {
+            const reloadedResult = await fetchSheetData(activeConfig);
+            setSheetData(reloadedResult);
+          } else {
+            setSheetData(result);
+          }
+        } else {
+          setSheetData(result);
+        }
+      } else {
+        setSheetData(result);
+      }
+      
       setConnectionStatus({
         status: 'success',
         message: 'Data berhasil dimuat.'
@@ -87,9 +126,9 @@ function App() {
   useEffect(() => {
     if (!currentUser) return;
 
-    // Admin tabs (dashboard, admin-logs, admin-users) don't load sheet data
-    const isAdminTab = currentTab === 'dashboard' || currentTab.startsWith('admin-');
-    if (currentUser.role === 'admin' || isAdminTab) {
+    // Admin tabs and admin dashboard don't load default sheet data
+    const isSpecialAdminTab = currentTab.startsWith('admin-') || (currentTab === 'dashboard' && currentUser.role === 'admin');
+    if (isSpecialAdminTab) {
       setIsLoading(false);
       return;
     }
@@ -99,7 +138,10 @@ function App() {
       setConfig(newConfig);
       loadData(newConfig);
     } else {
-      loadData(config);
+      // Load 'Satwa' sheet data for the dashboard's animal registry
+      const newConfig = { ...config, activeSheet: 'Satwa' };
+      setConfig(newConfig);
+      loadData(newConfig);
     }
   }, [currentTab, currentUser]);
 
@@ -222,7 +264,7 @@ function App() {
               currentUser.role === 'admin' ? (
                 <AdminDashboard config={config} initialSubTab="analytics" />
               ) : (
-                <Dashboard data={sheetData} preset={config.activeSheet} theme={theme} counts={dashboardCounts} />
+                <Dashboard data={sheetData} preset={config.activeSheet} theme={theme} counts={dashboardCounts} avgWeight={avgWeight} />
               )
             )}
 

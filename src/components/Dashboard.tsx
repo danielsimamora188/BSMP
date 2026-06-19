@@ -9,14 +9,15 @@ interface DashboardProps {
   preset: string;
   theme?: string;
   counts?: Record<string, number>;
+  avgWeight?: string;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ data, theme, counts }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ data, theme, counts, avgWeight }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Core telemetry calculation
   const stats = useMemo(() => {
-    // We aggregate data from all local storage datasets for Saka, Sinyorita, Winter, Leon, Manyu, Cengho, Abu
+    // We aggregate data from all local storage datasets
     const getLength = (key: string) => {
       if (counts && counts[key] !== undefined) {
         return counts[key];
@@ -55,25 +56,34 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, theme, counts }) => 
 
     const totalRecords = datasets.reduce((acc, curr) => acc + (curr.name !== 'Satwa' ? curr.count : 0), 0);
     
-    // Static lists for dolphins
-    const satwaRegistry = [
-      { name: 'LEON', desc: 'Tursiops Aduncus (SBJ: 2014)', tag: 'Sehat', badge: 'badge-success' },
-      { name: 'MANYU', desc: 'Tursiops Aduncus (SBJ: 2016)', tag: 'Sehat', badge: 'badge-success' },
-      { name: 'CENGHO', desc: 'Tursiops Aduncus (TSI: 2016)', tag: 'Sehat', badge: 'badge-success' },
-      { name: 'ABU', desc: 'Tursiops Aduncus (SBJ: 2016)', tag: 'Sehat', badge: 'badge-success' },
-      { name: 'SAKA', desc: 'Dalam Perawatan Medis Intensif', tag: 'Perawatan', badge: 'badge-danger' },
-      { name: 'SINYORITA', desc: 'Dalam Pemantauan Berkala', tag: 'Pemantauan', badge: 'badge-warning' },
-      { name: 'WINTER', desc: 'Kondisi Kesehatan Stabil', tag: 'Stabil', badge: 'badge-info' }
-    ];
+    // Dynamic lists for dolphins from Satwa sheet data
+    const satwaRows = data && data.rows ? data.rows : [];
+    const satwaRegistry = satwaRows.map(row => {
+      const name = String(row['Nama Satwa'] || '').toUpperCase();
+      const desc = String(row['Keterangan'] || row['Species'] || 'Spesies tidak diketahui');
+      const tag = String(row['Status Kesehatan'] || 'Sehat');
+      
+      let badge = 'badge-success';
+      const tagLower = tag.toLowerCase();
+      if (tagLower.includes('rawat')) {
+        badge = 'badge-danger';
+      } else if (tagLower.includes('pantau')) {
+        badge = 'badge-warning';
+      } else if (tagLower.includes('stabil')) {
+        badge = 'badge-info';
+      }
+      
+      return { name, desc, tag, badge };
+    });
 
     return {
       totalRecords,
       totalSatwa: getLength('Satwa'),
-      avgWeight: '98,2 Kg', // Average of weighed dolphins
+      avgWeight: avgWeight || '0 Kg',
       datasets,
       satwaRegistry
     };
-  }, [data]);
+  }, [data, counts, avgWeight]);
 
   // Read live CSS variable values for canvas rendering
   const getCssVar = useCallback((varName: string) => {

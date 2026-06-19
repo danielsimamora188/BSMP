@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Database, Lock, ShieldCheck, Users, ChevronLeft, Heart } from 'lucide-react';
-import { fetchSheetData } from '../utils/sheetSync';
+import { fetchSheetData, fetchDashboardCounts, initializeSpreadsheetData } from '../utils/sheetSync';
 import type { SheetConfig } from '../utils/sheetSync';
 
 interface LoginProps {
@@ -22,8 +22,16 @@ export const Login: React.FC<LoginProps> = ({ config, onLoginSuccess }) => {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        // fetchSheetData handles both demo (localStorage) and crud (GAS) modes
-        const data = await fetchSheetData({ ...config, activeSheet: 'Users' });
+        let data = await fetchSheetData({ ...config, activeSheet: 'Users' });
+        if (config.mode === 'crud' && (!data || !data.rows || data.rows.length === 0)) {
+          const dashboardData = await fetchDashboardCounts(config);
+          if (dashboardData.counts['Users'] === 0 && dashboardData.counts['Satwa'] === 0) {
+            const success = await initializeSpreadsheetData(config);
+            if (success) {
+              data = await fetchSheetData({ ...config, activeSheet: 'Users' });
+            }
+          }
+        }
         if (data && data.rows && data.rows.length > 0) {
           setUsersList(data.rows);
         }
